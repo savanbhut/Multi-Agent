@@ -8,9 +8,7 @@ Orchestrates the full multi-agent flow:
 Rate limiting note: your Mistral account is capped at 1 request/second
 (check admin.mistral.ai/plateforme/limits). Writer + Critic + possible
 revision = up to 3 LLM calls per run. time.sleep(1.1) between calls is
-not elegant, but it's the honest fix for a hard rate limit - don't skip
-it thinking retries alone will cover you, since aggressive retrying
-against a 1 req/sec cap just produces more 429s.
+the honest fix for a hard rate limit.
 """
 
 import time
@@ -43,35 +41,36 @@ def run_research_pipeline(topic: str, max_sources: int = 5) -> dict:
     critique = critique_report(topic, report)
     time.sleep(RATE_LIMIT_DELAY)
 
-    # one revision pass if the critic flags it - not an infinite loop,
-    # since an infinite "revise until perfect" loop against a rate-limited
-    # API will burn your quota fast
     score_before = critique.score
     score_after = None
 
     if critique.needs_revision:
-        print(f"[revision] Critic scored it {score_before}/10 - fixing {len(critique.specific_issues)} specific issues")
-        for issue in critique.specific_issues:
-            print(f"    - {issue}")
+        print(f"[revision] Critic scored it {score_before}/10")
+        print(f"    Citation gaps ({len(critique.citation_gaps)}):")
+        for issue in critique.citation_gaps:
+            print(f"      - {issue}")
+        print(f"    Accuracy concerns ({len(critique.accuracy_concerns)}):")
+        for issue in critique.accuracy_concerns:
+            print(f"      - {issue}")
 
-        report = revise_report(topic, report, critique.specific_issues, scraped)
+        report = revise_report(
+            topic, report,
+            critique.citation_gaps,
+            critique.accuracy_concerns,
+            scraped,
+        )
         time.sleep(RATE_LIMIT_DELAY)
 
         critique = critique_report(topic, report)
         score_after = critique.score
         time.sleep(RATE_LIMIT_DELAY)
 
-        # This is the honest check most tutorials skip: did revision
-        # actually help, or did the score stay flat/drop? Print it plainly
-        # instead of assuming the loop worked because it ran without error.
         if score_after > score_before:
             print(f"[revision] Improved: {score_before}/10 -> {score_after}/10")
         elif score_after == score_before:
-            print(f"[revision] No measurable change: stayed at {score_after}/10 - "
-                  f"revision prompt may need sharper, more specific critic feedback")
+            print(f"[revision] No measurable change: stayed at {score_after}/10")
         else:
-            print(f"[revision] Got WORSE: {score_before}/10 -> {score_after}/10 - "
-                  f"investigate before trusting this pipeline's revision step")
+            print(f"[revision] Got WORSE: {score_before}/10 -> {score_after}/10 - investigate")
 
     return {
         "topic": topic,
@@ -81,7 +80,8 @@ def run_research_pipeline(topic: str, max_sources: int = 5) -> dict:
         "score_after_revision": score_after,
         "score": critique.score,
         "strengths": critique.strengths,
-        "specific_issues": critique.specific_issues,
+        "citation_gaps": critique.citation_gaps,
+        "accuracy_concerns": critique.accuracy_concerns,
     }
 
 

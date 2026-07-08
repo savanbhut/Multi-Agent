@@ -191,7 +191,10 @@ button:disabled {
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
-
+.accuracy-heading {
+  margin-top: 18px !important;
+  color: #ff9aa5 !important;
+}
 .issues-panel ul {
   padding-left: 20px;
   line-height: 1.6;

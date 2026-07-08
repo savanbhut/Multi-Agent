@@ -36,7 +36,8 @@ class ResearchResponse(BaseModel):
     score_after_revision: Optional[int]
     score: int
     strengths: str
-    specific_issues: list[str]
+    citation_gaps: list[str]
+    accuracy_concerns: list[str]
 
 
 @app.get("/health")

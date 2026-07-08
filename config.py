@@ -22,12 +22,15 @@ if not MISTRAL_API_KEY:
 if not TAVILY_API_KEY:
     raise ValueError("TAVILY_API_KEY not found in .env")
 
-# Mistral's free/dev tier is 1 request/second on your account (checked on your
-# dashboard). temperature is kept low for the writer/critic since factual
-# consistency matters more than creativity here.
 llm = ChatMistralAI(
     model="mistral-large-latest",
     temperature=0.3,
     api_key=MISTRAL_API_KEY,
-    max_retries=2,        # built-in SDK retry for transient errors
+    max_retries=2,
+    max_tokens=4096,       # raised from default - structured critic output
+                           # (score + strengths + two issue lists) can run
+                           # long, and truncation mid-JSON causes required
+                           # fields declared late in the schema to go
+                           # missing entirely (seen firsthand: needs_revision
+                           # got cut off on a thin-content topic).
 )

@@ -113,14 +113,28 @@ function App() {
             </div>
           </section>
 
-          {result.specific_issues?.length > 0 && (
+         {(result.citation_gaps?.length > 0 || result.accuracy_concerns?.length > 0) && (
             <section className="issues-panel">
-              <h3>Remaining / Fixed Issues</h3>
-              <ul>
-                {result.specific_issues.map((issue, i) => (
-                  <li key={i}>{issue}</li>
-                ))}
-              </ul>
+              {result.citation_gaps?.length > 0 && (
+                <>
+                  <h3>Citation Gaps (fixed by adding sources)</h3>
+                  <ul>
+                    {result.citation_gaps.map((issue, i) => (
+                      <li key={i}>{issue}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
+              {result.accuracy_concerns?.length > 0 && (
+                <>
+                  <h3 className="accuracy-heading">Accuracy Concerns (verified against sources)</h3>
+                  <ul>
+                    {result.accuracy_concerns.map((issue, i) => (
+                      <li key={i}>{issue}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
             </section>
           )}
 
